@@ -1,0 +1,32 @@
+# FleetPulse — Phase 1: a single Kafka broker in KRaft mode (no ZooKeeper)
+services:
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: kafka
+    hostname: kafka
+    ports:
+      - "9092:9092"   # client port, reachable from your machine and from inside the container
+    environment:
+      # --- KRaft: this one node is both broker and controller ---
+      KAFKA_NODE_ID: 1
+#      The two jobs this server does:
+#      broker: stores messages and serves producers and consumers.
+#      controller: manages the cluster’s metadata, such as which topics exist, which broker leads each partition, and who is alive. ZooKeeper used to do this job.
+#      ==> Doing both in one process is called combined mode. It’s fine for development. In production the controllers usually run separately.
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+
+      # --- Listeners: 9092 for clients, 9093 for the controller (internal) ---
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+
+      # --- Single broker: internal topics cannot have more than 1 replica ---
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+      # --- Learning-friendly settings ---
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0   # consumers get partitions immediately (default waits 3 s)
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"    # forces you to create topics explicitly, with the partition count you chose
