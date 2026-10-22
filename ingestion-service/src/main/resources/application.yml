@@ -7,6 +7,12 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
       acks: all
+      properties:
+        # send() can block on metadata lookup for up to max.block.ms; keep it short so a dead broker fails fast.
+        max.block.ms: 3000
+        request.timeout.ms: 2000
+        # Must be >= linger.ms + request.timeout.ms or the producer refuses to start.
+        delivery.timeout.ms: 5000
 
 server:
   port: 8081
