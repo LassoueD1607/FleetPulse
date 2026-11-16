@@ -1,17 +1,43 @@
 spring:
   application:
     name: ingestion-service
+
   kafka:
+    # First connection point. The producer connects here to fetch cluster metadata
+    # (which broker owns which partition), then talks directly to the right broker.
+    # In production, list multiple brokers so a single broker outage doesn't block startup.
     bootstrap-servers: localhost:9092
+
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+
+      # Wait for all in-sync replicas to confirm the write before acking.
+      # Safest setting — no data loss even if the leader crashes right after a send.
+      # Note: with a single broker (dev setup) this behaves like acks=1
+      # because there are no replicas to wait for.
       acks: all
+
       properties:
-        # send() can block on metadata lookup for up to max.block.ms; keep it short so a dead broker fails fast.
+        # Do not embed the producer's fully-qualified class name as a Kafka header.
+        # By default, JacksonJsonSerializer stamps __TypeId__ = com.fleetpulse.ingestion.event.TelemetryEvent
+        # onto every message. The consumer would then try to deserialize into that class,
+        # which does not exist in its classpath and is not in its trusted packages.
+        # With this off, the consumer uses spring.json.value.default.type instead.
+        spring.json.add.type.headers: false
+
+        # How long send() may block while fetching cluster metadata before the first send.
+        # If the broker is unreachable, fail after 3 s instead of hanging indefinitely.
         max.block.ms: 3000
+
+        # How long the producer waits for the broker to acknowledge a sent record.
+        # If no ack arrives within 2 s, the send is considered failed.
         request.timeout.ms: 2000
-        # Must be >= linger.ms + request.timeout.ms or the producer refuses to start.
+
+        # Total time budget for one send, including retries.
+        # Rule: delivery.timeout.ms >= linger.ms + request.timeout.ms.
+        # With linger.ms=0 (default) and request.timeout.ms=2000, 5000 satisfies the rule.
+        # Violating this constraint causes the producer to refuse to start.
         delivery.timeout.ms: 5000
 
 server:

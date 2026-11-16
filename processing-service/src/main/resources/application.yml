@@ -1,21 +1,68 @@
 spring:
   application:
     name: processing-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/fleetpulse
+    username: fleetpulse
+    password: fleetpulse
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    # Create the processed_events table on startup if it does not exist.
+    # 'update' is fine for development — it never drops columns or data.
+    # In production, use 'validate' and manage the schema with a migration tool (Flyway/Liquibase).
+    hibernate:
+      ddl-auto: update
+    # Set to true to see the SQL Hibernate generates — useful while debugging.
+    show-sql: false
+
   kafka:
     bootstrap-servers: localhost:9092
+
     consumer:
+      # All consumers with the same group-id share the partitions of a topic.
+      # Kafka assigns each partition to exactly one consumer in the group,
+      # enabling horizontal scaling and offset tracking per group.
       group-id: processing
+
+      # When this group has never read the topic before, start from the
+      # very first record. Use 'latest' if you only want records arriving
+      # after the service starts.
       auto-offset-reset: earliest
+
+      # Disable Kafka's automatic periodic offset commit.
+      # We commit manually (ack.acknowledge()) only after the work succeeds,
+      # so a crash before the commit causes redelivery — no data loss.
       enable-auto-commit: false
+
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+
       properties:
-        spring.json.trusted.packages: com.fleetpulse.event
-        spring.json.value.default.type: com.fleetpulse.event.TelemetryEvent
+        # Ignore the __TypeId__ header that the producer may have stamped on the message.
+        # Without this, the deserializer reads the header and tries to find the producer's
+        # class (com.fleetpulse.ingestion.event.TelemetryEvent) which does not exist here.
+        # With this set to false, it always uses spring.json.value.default.type below.
+        spring.json.use.type.headers: false
+
+        # Always deserialize the value into this class.
+        spring.json.value.default.type: com.fleetpulse.processing.event.TelemetryEvent
+
+        # Security: only allow deserialization of classes from this package.
+        # Prevents a malicious broker from tricking the consumer into
+        # instantiating an arbitrary class from the classpath.
+        spring.json.trusted.packages: com.fleetpulse.processing.event
+
     producer:
+      # The processing-service also produces — to telemetry.DLT when a record
+      # fails all retries. The error handler uses this producer internally.
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+
     listener:
+      # MANUAL means the listener must call ack.acknowledge() explicitly.
+      # Spring Kafka will not commit the offset until that call is made.
       ack-mode: manual
 
 server:

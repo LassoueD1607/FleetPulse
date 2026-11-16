@@ -30,3 +30,22 @@ services:
       # --- Learning-friendly settings ---
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0   # consumers get partitions immediately (default waits 3 s)
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"    # forces you to create topics explicitly, with the partition count you chose
+
+  # PostgreSQL — stores processed event IDs for idempotency in processing-service.
+  # Why PostgreSQL and not Redis:
+  #   PostgreSQL gives you durable, ACID-compliant storage with a unique constraint.
+  #   A duplicate insert simply throws a constraint-violation exception — no extra logic needed.
+  #   Redis is faster (in-memory key-value store) and would work too, but it adds a second
+  #   infrastructure concept to explain. For a CV project, PostgreSQL is the safer choice:
+  #   it is the most common database in Spring Boot stacks and every interviewer recognizes it.
+  #   Use Redis if you need sub-millisecond deduplication at very high throughput
+  #   or if you already have Redis in the stack for caching.
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    ports:
+      - "5433:5432"   # 5432 is taken by a local PostgreSQL installation; app connects on 5433
+    environment:
+      POSTGRES_DB: fleetpulse
+      POSTGRES_USER: fleetpulse
+      POSTGRES_PASSWORD: fleetpulse
