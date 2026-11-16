@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: live-service
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+    consumer:
+      # Live view: only alerts arriving after the service starts matter, no replay of history.
+      auto-offset-reset: latest
+
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+
+      properties:
+        # Same reason as in processing-service: ignore the producer's __TypeId__ header, whose class
+        # does not exist here, and always deserialize into our own AlertEvent.
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.fleetpulse.live.event.AlertEvent
+        spring.json.trusted.packages: com.fleetpulse.live.event
+
+server:
+  port: 8083

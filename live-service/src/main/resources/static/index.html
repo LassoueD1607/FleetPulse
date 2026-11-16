@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FleetPulse live alerts</title>
+    <style>
+        body { font-family: sans-serif; margin: 2rem; }
+        #status { color: #888; }
+        li { margin: .25rem 0; }
+    </style>
+</head>
+<body>
+<h1>FleetPulse live alerts</h1>
+<p id="status">connecting...</p>
+<ul id="alerts"></ul>
+<script>
+    // EventSource reconnects automatically if the connection drops.
+    const source = new EventSource('/alerts/stream');
+    const status = document.getElementById('status');
+    const list = document.getElementById('alerts');
+
+    source.onopen = () => status.textContent = 'connected';
+    source.onerror = () => status.textContent = 'disconnected, retrying...';
+    source.onmessage = (e) => {
+        const a = JSON.parse(e.data);
+        const li = document.createElement('li');
+        li.textContent = a.timestamp + ' | ' + a.alertType + ' | ' + a.vehicleId + ' | ' + a.speedKmh + ' km/h';
+        list.prepend(li);
+    };
+</script>
+</body>
+</html>
