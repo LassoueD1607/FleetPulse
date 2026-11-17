@@ -45,3 +45,5 @@ application-local.properties
 # Temporary files
 *.tmp
 *.temp
+/build-images.ps1
+/build-images.sh

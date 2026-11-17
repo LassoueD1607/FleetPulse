@@ -66,6 +66,20 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<!-- Builds the Docker image straight from the project (no Dockerfile): mvnw compile jib:dockerBuild -->
+			<plugin>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+				<version>3.4.5</version>
+				<configuration>
+					<from>
+						<image>eclipse-temurin:17-jre</image>
+					</from>
+					<to>
+						<image>fleetpulse/processing-service</image>
+					</to>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
