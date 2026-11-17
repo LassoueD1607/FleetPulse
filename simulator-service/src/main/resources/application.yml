@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: simulator-service
+  main:
+    # No HTTP server needed: this service only calls ingestion. The scheduler keeps the JVM alive.
+    web-application-type: none
+
+simulator:
+  ingestion-url: http://localhost:8081
+  vehicle-count: 10
+  interval-ms: 1000
