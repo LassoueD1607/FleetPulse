@@ -9,3 +9,6 @@ simulator:
   ingestion-url: http://localhost:8081
   vehicle-count: 10
   interval-ms: 1000
+  # One real second covers this many simulated seconds of driving, so trips between cities
+  # take minutes to watch instead of hours. Reported speeds are unaffected.
+  time-scale: 120

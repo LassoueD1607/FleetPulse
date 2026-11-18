@@ -1,0 +1,47 @@
+@if (store.selected(); as v) {
+  <aside class="drawer" role="dialog" aria-label="Details of {{ v.vehicleId }}">
+    <header class="top">
+      <div>
+        <h2>{{ v.vehicleId }}</h2>
+        <app-status-pill [status]="v.status" />
+      </div>
+      <button type="button" class="close" aria-label="Close details" (click)="close()">&times;</button>
+    </header>
+
+    <div class="speedo">
+      <span class="big" [class.over]="v.speedKmh > limit">{{ v.speedKmh.toFixed(0) }}</span>
+      <span class="unit">km/h</span>
+      <span class="note">limit {{ limit }}</span>
+    </div>
+
+    @if (spark(); as s) {
+      <figure class="spark">
+        <svg [attr.viewBox]="s.viewBox" preserveAspectRatio="none" role="img" aria-label="Speed over the last readings">
+          <polygon [attr.points]="s.area" class="area" />
+          <polyline [attr.points]="s.line" class="line" />
+          <line x1="0" [attr.y1]="s.limitY" [attr.x2]="s.width" [attr.y2]="s.limitY" class="limit-line" />
+        </svg>
+        <figcaption>Speed, last {{ s.count }} readings · dashed line is the {{ limit }} km/h limit</figcaption>
+      </figure>
+    }
+
+    <dl class="facts">
+      <dt>Position</dt>
+      <dd>{{ v.lat.toFixed(4) }}, {{ v.lon.toFixed(4) }}</dd>
+      <dt>Last seen</dt>
+      <dd>{{ ago(v.lastSeen, store.now()) }}</dd>
+    </dl>
+
+    <h3 class="card-title">Recent alerts</h3>
+    <ul class="alerts">
+      @for (a of vehicleAlerts(); track a.alertId) {
+        <li [class]="a.severity">
+          <span class="when">{{ ago(a.timestamp, store.now()) }}</span>
+          <span><strong>{{ label[a.alertType] }}</strong><small>{{ a.message }}</small></span>
+        </li>
+      } @empty {
+        <li class="none">No alerts for this vehicle</li>
+      }
+    </ul>
+  </aside>
+}

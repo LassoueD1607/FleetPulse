@@ -1,6 +1,10 @@
 package com.fleetpulse.live.stream;
 
 import com.fleetpulse.live.event.AlertEvent;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -12,6 +16,7 @@ import reactor.core.publisher.Sinks;
 public class AlertStream {
 
     private static final Logger log = LoggerFactory.getLogger(AlertStream.class);
+    private static final int RECENT_LIMIT = 100;
 
     // Bridge between the blocking Kafka callback and the reactive world: the listener pushes into
     // the sink, each connected browser subscribes to its Flux. directBestEffort never buffers:
@@ -19,15 +24,31 @@ public class AlertStream {
     // blocking the Kafka thread or the other browsers. That is the right behaviour for a live view.
     private final Sinks.Many<AlertEvent> sink = Sinks.many().multicast().directBestEffort();
 
+    // The sink forgets, so the last alerts are kept here for a dashboard that opens after they happened.
+    private final Deque<AlertEvent> recent = new ArrayDeque<>();
+
     // Own consumer group, separate from "processing": it receives every alert and its offsets
     // do not interfere with the processing-service.
     @KafkaListener(topics = "alerts", groupId = "live")
     public void onAlert(AlertEvent alert) {
-        log.info("Alert {} for vehicle {} — {}km/h", alert.alertType(), alert.vehicleId(), alert.speedKmh());
+        log.info("{} {} for vehicle {} — {}", alert.severity(), alert.alertType(), alert.vehicleId(), alert.message());
+        remember(alert);
         sink.tryEmitNext(alert);
     }
 
     public Flux<AlertEvent> stream() {
         return sink.asFlux();
+    }
+
+    // Newest first.
+    public synchronized List<AlertEvent> recent() {
+        return new ArrayList<>(recent);
+    }
+
+    private synchronized void remember(AlertEvent alert) {
+        recent.addFirst(alert);
+        if (recent.size() > RECENT_LIMIT) {
+            recent.removeLast();
+        }
     }
 }

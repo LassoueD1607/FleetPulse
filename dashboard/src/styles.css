@@ -1,0 +1,168 @@
+@import '@fontsource-variable/inter';
+@import 'leaflet/dist/leaflet.css';
+
+:root {
+  --bg: #f1f4f9;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --brand: #2563eb;
+  --header: #0b1220;
+
+  --ok: #16a34a;
+  --ok-bg: #dcfce7;
+  --speeding: #d97706;
+  --speeding-bg: #fef3c7;
+  --outside: #dc2626;
+  --outside-bg: #fee2e2;
+  --offline: #64748b;
+  --offline-bg: #e2e8f0;
+  --info: #2563eb;
+  --info-bg: #dbeafe;
+
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 6px 20px rgba(15, 23, 42, 0.05);
+
+  font-family: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+input {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.card-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* Status and severity colour hooks: an element with one of these classes gets --c and --c-bg. */
+.OK {
+  --c: var(--ok);
+  --c-bg: var(--ok-bg);
+}
+.SPEEDING,
+.WARNING {
+  --c: var(--speeding);
+  --c-bg: var(--speeding-bg);
+}
+.OUTSIDE_TUNISIA,
+.CRITICAL {
+  --c: var(--outside);
+  --c-bg: var(--outside-bg);
+}
+.OFFLINE {
+  --c: var(--offline);
+  --c-bg: var(--offline-bg);
+}
+.INFO {
+  --c: var(--info);
+  --c-bg: var(--info-bg);
+}
+
+/* Muted base map, so the coloured vehicle markers are what the eye goes to. */
+.leaflet-tile-pane {
+  filter: grayscale(0.6) saturate(0.8) brightness(1.03);
+}
+
+/* Map markers are created by Leaflet outside Angular, so their styles have to be global. */
+.leaflet-marker-icon {
+  transition: transform 0.9s linear; /* vehicles glide between two readings instead of jumping */
+}
+
+.fleet-marker {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transform: translate(-7px, -50%);
+  white-space: nowrap;
+}
+
+.fleet-marker .dot {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--c);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.3), 0 2px 6px rgba(15, 23, 42, 0.3);
+}
+
+.fleet-marker .tag {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.fleet-marker.OUTSIDE_TUNISIA .dot {
+  animation: pulse 1.4s ease-out infinite;
+}
+
+.fleet-marker.selected .dot {
+  width: 18px;
+  height: 18px;
+  margin-left: -2px;
+  outline: 3px solid var(--brand);
+}
+
+.fleet-marker.OFFLINE {
+  opacity: 0.6;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(220, 38, 38, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaflet-marker-icon {
+    transition: none;
+  }
+  .fleet-marker.OUTSIDE_TUNISIA .dot {
+    animation: none;
+  }
+}

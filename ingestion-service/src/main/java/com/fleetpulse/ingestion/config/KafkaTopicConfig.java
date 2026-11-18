@@ -31,4 +31,12 @@ public class KafkaTopicConfig {
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    public NewTopic vehicleUpdatesTopic() {
+        return TopicBuilder.name("vehicle-updates")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
 }
