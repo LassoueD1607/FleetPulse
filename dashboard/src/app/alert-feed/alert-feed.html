@@ -1,0 +1,27 @@
+<header class="head">
+  <h2 class="card-title">Alerts</h2>
+  <div class="chips" role="group" aria-label="Filter alerts">
+    @for (f of filters; track f.key) {
+      <button type="button" class="chip" [class.on]="filter() === f.key" [attr.aria-pressed]="filter() === f.key" (click)="filter.set(f.key)">
+        {{ f.label }}
+      </button>
+    }
+  </div>
+</header>
+
+<ul class="list">
+  @for (a of items(); track a.alertId) {
+    <li>
+      <button type="button" [class]="'alert ' + a.severity" (click)="store.select(a.vehicleId)">
+        <span class="sev">{{ a.severity }}</span>
+        <span class="main">
+          <strong>{{ a.vehicleId }} · {{ label[a.alertType] }}</strong>
+          <small>{{ a.message }}</small>
+        </span>
+        <time>{{ ago(a.timestamp, store.now()) }}</time>
+      </button>
+    </li>
+  } @empty {
+    <li class="empty">No alerts yet</li>
+  }
+</ul>

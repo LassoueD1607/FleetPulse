@@ -2,31 +2,84 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>FleetPulse live alerts</title>
+    <title>FleetPulse live</title>
     <style>
         body { font-family: sans-serif; margin: 2rem; }
         #status { color: #888; }
+        table { border-collapse: collapse; margin-bottom: 1.5rem; }
+        th, td { text-align: left; padding: .25rem .75rem; border-bottom: 1px solid #ddd; }
+        .OK { color: #1a7f37; }
+        .SPEEDING { color: #b35900; font-weight: bold; }
+        .OUTSIDE_TUNISIA { color: #c62828; font-weight: bold; }
+        .OFFLINE { color: #888; }
         li { margin: .25rem 0; }
     </style>
 </head>
 <body>
-<h1>FleetPulse live alerts</h1>
+<h1>FleetPulse live</h1>
 <p id="status">connecting...</p>
-<ul id="alerts"></ul>
-<script>
-    // EventSource reconnects automatically if the connection drops.
-    const source = new EventSource('/alerts/stream');
-    const status = document.getElementById('status');
-    const list = document.getElementById('alerts');
 
+<h2>Vehicles</h2>
+<table>
+    <thead><tr><th>Vehicle</th><th>Status</th><th>Speed</th><th>Position</th><th>Last seen</th></tr></thead>
+    <tbody id="vehicles"></tbody>
+</table>
+
+<h2>Alerts</h2>
+<ul id="alerts"></ul>
+
+<script>
+    const vehicles = new Map();
+    const status = document.getElementById('status');
+    const tbody = document.getElementById('vehicles');
+    const alertList = document.getElementById('alerts');
+
+    function cell(text, className) {
+        const td = document.createElement('td');
+        td.textContent = text;
+        if (className) td.className = className;
+        return td;
+    }
+
+    function renderVehicles() {
+        tbody.replaceChildren();
+        [...vehicles.values()]
+            .sort((a, b) => a.vehicleId.localeCompare(b.vehicleId))
+            .forEach(v => {
+                const tr = document.createElement('tr');
+                tr.append(cell(v.vehicleId),
+                          cell(v.status, v.status),
+                          cell(v.speedKmh.toFixed(1) + ' km/h'),
+                          cell(v.lat.toFixed(4) + ', ' + v.lon.toFixed(4)),
+                          cell(new Date(v.lastSeen).toLocaleTimeString()));
+                tbody.append(tr);
+            });
+    }
+
+    function addAlert(a) {
+        const li = document.createElement('li');
+        li.textContent = new Date(a.timestamp).toLocaleTimeString() + ' | ' + a.severity + ' | ' + a.vehicleId + ' | ' + a.message;
+        alertList.prepend(li);
+        while (alertList.children.length > 50) alertList.lastChild.remove();
+    }
+
+    // Snapshot first, so the page is not empty, then live updates on top.
+    // /alerts is newest first, so it is replayed oldest first to end up in the same order.
+    Promise.all([
+        fetch('/vehicles').then(r => r.json()).then(list => list.forEach(v => vehicles.set(v.vehicleId, v))),
+        fetch('/alerts').then(r => r.json()).then(list => list.reverse().forEach(addAlert))
+    ]).then(renderVehicles);
+
+    // EventSource reconnects automatically if the connection drops.
+    const source = new EventSource('/stream');
     source.onopen = () => status.textContent = 'connected';
     source.onerror = () => status.textContent = 'disconnected, retrying...';
-    source.onmessage = (e) => {
-        const a = JSON.parse(e.data);
-        const li = document.createElement('li');
-        li.textContent = a.timestamp + ' | ' + a.alertType + ' | ' + a.vehicleId + ' | ' + a.speedKmh + ' km/h';
-        list.prepend(li);
-    };
+    source.addEventListener('vehicle', e => {
+        const v = JSON.parse(e.data);
+        vehicles.set(v.vehicleId, v);
+        renderVehicles();
+    });
+    source.addEventListener('alert', e => addAlert(JSON.parse(e.data)));
 </script>
 </body>
 </html>

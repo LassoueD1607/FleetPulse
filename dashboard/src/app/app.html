@@ -1,0 +1,45 @@
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true"></span>
+    <div class="titles">
+      <strong>FleetPulse</strong>
+      <small>Rental fleet · Tunisia</small>
+    </div>
+  </div>
+
+  <div class="status">
+    <span class="conn" [attr.data-state]="store.connection()" role="status">
+      <span class="dot" aria-hidden="true"></span>{{ connectionLabel() }}
+    </span>
+    <button type="button" class="sound" [attr.aria-pressed]="soundOn()" (click)="toggleSound()">
+      Sound {{ soundOn() ? 'on' : 'off' }}
+    </button>
+    <time class="clock">{{ clock() }}</time>
+  </div>
+</header>
+
+<main class="page">
+  <app-kpi-cards />
+
+  <section class="grid">
+    <app-fleet-map class="card" />
+    <app-alert-feed class="card" />
+  </section>
+
+  <app-vehicle-table class="card" />
+</main>
+
+<app-vehicle-detail />
+
+@if (toast(); as alert) {
+  <div class="toast" role="alert">
+    <button type="button" class="toast-main" (click)="openToast(alert)">
+      <span class="badge">Critical</span>
+      <span class="text">
+        <strong>{{ alert.vehicleId }} · {{ alertLabel[alert.alertType] }}</strong>
+        <small>{{ alert.message }}</small>
+      </span>
+    </button>
+    <button type="button" class="toast-close" aria-label="Dismiss alert" (click)="dismissToast()">&times;</button>
+  </div>
+}

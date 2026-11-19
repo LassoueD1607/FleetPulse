@@ -16,22 +16,32 @@ public class TelemetrySender {
 
     private final List<Vehicle> vehicles;
     private final WebClient client;
-    private final double intervalSeconds;
+    private final double simulatedSecondsPerTick;
 
     public TelemetrySender(@Value("${simulator.ingestion-url}") String ingestionUrl,
                            @Value("${simulator.vehicle-count}") int vehicleCount,
-                           @Value("${simulator.interval-ms}") long intervalMs) {
+                           @Value("${simulator.interval-ms}") long intervalMs,
+                           @Value("${simulator.time-scale}") double timeScale) {
         this.client = WebClient.create(ingestionUrl);
-        this.intervalSeconds = intervalMs / 1000.0;
+        this.simulatedSecondsPerTick = intervalMs / 1000.0 * timeScale;
         this.vehicles = IntStream.rangeClosed(1, vehicleCount)
-                .mapToObj(i -> new Vehicle(String.format("V-%02d", i)))
+                .mapToObj(i -> new Vehicle(String.format("V-%02d", i), personalityFor(i)))
                 .toList();
+    }
+
+    // With the default 10 vehicles: V-05 and V-10 drive aggressively, V-03 and V-08 cross the border.
+    private static Personality personalityFor(int index) {
+        return switch (index % 5) {
+            case 0 -> Personality.AGGRESSIVE;
+            case 3 -> Personality.ROGUE;
+            default -> Personality.CALM;
+        };
     }
 
     @Scheduled(fixedRateString = "${simulator.interval-ms}")
     public void tick() {
         for (Vehicle vehicle : vehicles) {
-            TelemetryReading reading = vehicle.move(intervalSeconds);
+            TelemetryReading reading = vehicle.move(simulatedSecondsPerTick);
             // subscribe() fires the request without waiting, so one slow call never delays the other vehicles.
             client.post()
                     .uri("/telemetry")

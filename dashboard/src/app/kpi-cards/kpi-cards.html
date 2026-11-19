@@ -1,0 +1,15 @@
+@for (card of cards(); track card.label) {
+  <button
+    type="button"
+    class="kpi card"
+    [class]="'kpi card ' + card.tone"
+    [class.active]="card.filter !== null && store.statusFilter() === card.filter && card.filter !== 'ALL'"
+    [class.static]="card.filter === null"
+    [attr.aria-pressed]="card.filter === null || card.filter === 'ALL' ? null : store.statusFilter() === card.filter"
+    (click)="choose(card)"
+  >
+    <span class="label">{{ card.label }}</span>
+    <span class="value">{{ card.value }}</span>
+    <span class="hint">{{ card.hint }}</span>
+  </button>
+}

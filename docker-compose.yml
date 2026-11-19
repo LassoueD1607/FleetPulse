@@ -1,5 +1,6 @@
 # FleetPulse — Kafka (KRaft, no ZooKeeper), PostgreSQL and the four services.
-# The service images are built beforehand with build-images.sh / build-images.ps1 (Jib).
+# The images are built beforehand with build-images.sh / build-images.ps1 (Jib for the Java services,
+# a Dockerfile for the Angular dashboard).
 services:
   kafka:
     image: apache/kafka:3.8.0
@@ -114,3 +115,12 @@ services:
       SIMULATOR_INGESTION_URL: http://ingestion-service:8081
     depends_on:
       - ingestion-service
+
+  # The dashboard: nginx serves the Angular app and proxies /api to live-service (see dashboard/nginx.conf).
+  dashboard:
+    image: fleetpulse/dashboard
+    container_name: dashboard
+    ports:
+      - "4200:80"
+    depends_on:
+      - live-service

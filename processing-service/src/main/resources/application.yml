@@ -65,5 +65,13 @@ spring:
       # Spring Kafka will not commit the offset until that call is made.
       ack-mode: manual
 
+fleet:
+  rules:
+    # A vehicle is speeding above this speed...
+    speed-limit-kmh: 110
+    # ...and stops speeding only below this one. The gap stops a speed hovering around 110
+    # from flipping the state, and raising a new alert, on every reading.
+    speeding-clear-kmh: 105
+
 server:
   port: 8082
